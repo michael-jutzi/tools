@@ -1,13 +1,6 @@
 <!DOCTYPE html>
-<!--
-
-Datei kann auf grafana gehostet werden
-Speichern auf Grafana Server in /usr/share/grafana/public/custom/
-
-https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html
 
 
--->
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -48,7 +41,7 @@ https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html
       visibility: hidden;
       margin-top: 100px;
    position: relative;
-  width: 100px;
+  width: 120px;
   height: 100px;
   overflow: hidden;
 }
@@ -70,6 +63,41 @@ https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html
 .bw {
   z-index: 1;
   filter: grayscale(100%);
+}
+
+.diamant-gold{
+  opacity: 0;
+}
+
+#diamant-gold-10{
+  z-index:20;
+}
+#diamant-gold-9{
+  z-index:19;
+}
+#diamant-gold-8{
+  z-index:18;
+}
+#diamant-gold-7{
+  z-index:17;
+}
+#diamant-gold-6{
+  z-index:16;
+}
+#diamant-gold-5{
+  z-index:15;
+}
+#diamant-gold-4{
+  z-index:14;
+}
+#diamant-gold-3{
+  z-index:13;
+}
+#diamant-gold-2{
+  z-index:12;
+}
+#diamant-gold-1{
+  z-index:11;
 }
 
 
@@ -94,6 +122,16 @@ https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html
 
 <br>
 <div id="img-wrap">
+  <img src="diamant-gold-10.png" class="diamant-gold" id="diamant-gold-10">
+  <img src="diamant-gold-9.png" class="diamant-gold" id="diamant-gold-9">
+  <img src="diamant-gold-8.png" class="diamant-gold" id="diamant-gold-8">
+  <img src="diamant-gold-7.png" class="diamant-gold" id="diamant-gold-7">
+  <img src="diamant-gold-6.png" class="diamant-gold" id="diamant-gold-6">
+  <img src="diamant-gold-5.png" class="diamant-gold" id="diamant-gold-5">
+  <img src="diamant-gold-4.png" class="diamant-gold" id="diamant-gold-4">
+  <img src="diamant-gold-3.png" class="diamant-gold" id="diamant-gold-3">
+  <img src="diamant-gold-2.png" class="diamant-gold" id="diamant-gold-2">
+  <img src="diamant-gold-1.png" class="diamant-gold" id="diamant-gold-1">
   <img src="diamant.png" id="color">
   <img src="diamant.png" class="bw">
 </div>
@@ -196,6 +234,18 @@ function startLiveUpdate(bisherSekunden, startSekunden) {
 
     // Diamant aktualisieren
     document.getElementById("color").style.clipPath = `inset(${100-((aktuell-29880)/3600*100).toFixed(0)}% 0px 0px 0px)`;
+
+    // Goldigen Diamant aktualisieren
+    document.getElementById("diamant-gold-1").style.opacity = (aktuell - 33480) / 600;
+    document.getElementById("diamant-gold-2").style.opacity = (aktuell - 33480-600*1) / 600;
+    document.getElementById("diamant-gold-3").style.opacity = (aktuell - 33480-600*2) / 600;
+    document.getElementById("diamant-gold-4").style.opacity = (aktuell - 33480-600*3) / 600;
+    document.getElementById("diamant-gold-5").style.opacity = (aktuell - 33480-600*4) / 600;
+    document.getElementById("diamant-gold-6").style.opacity = (aktuell - 33480-600*5) / 600;
+    document.getElementById("diamant-gold-7").style.opacity = (aktuell - 33480-600*6) / 600;
+    document.getElementById("diamant-gold-8").style.opacity = (aktuell - 33480-600*7) / 600;
+    document.getElementById("diamant-gold-9").style.opacity = (aktuell - 33480-600*8) / 600;
+    document.getElementById("diamant-gold-10").style.opacity = (aktuell - 33480-600*9) / 600;
 
     // Diamant einblenden
     if (aktuell > 29880) {
