@@ -1,0 +1,17 @@
+<html>
+
+<body>
+
+<span>
+Drag this bookmarklet into your browser bar:
+<br>
+<br>
+<a style="background-color:grey;padding:5px;color:white!important;border-radius:4px" href="javascript:(function(){  const elements = Array.from(document.querySelectorAll('*'));  const timestamps = elements    .map(el => el.textContent.trim())    .filter(text => /^\d{2}:\d{2}:\d{2}$/.test(text));  const uniqueTimestamps = Array.from(new Set(timestamps));  if (uniqueTimestamps.length > 0) {    const joined = uniqueTimestamps.join(';');    const url = 'https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html?timestamps=%27 + encodeURIComponent(joined);    window.open(url, %27_blank%27,'noopener,noreferrer,width=600,height=700,left=200,top=200');  } else {    alert(%27Keine gültigen Zeitstempel im Format 00:00:00 gefunden.%27);  }})();">
+  Zeit berechnen
+</a>
+</span>
+
+
+</body>
+
+</html>
