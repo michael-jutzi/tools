@@ -264,43 +264,89 @@
     </div>
   </div>
 
+  <!-- Ferien-Überzeit -->
+  <div class="card">
+    <div class="card-label">Arbeitszeitrechner</div>
+
+    <div class="setting-row clickable" onclick="toggleFerienBar()">
+      <div class="setting-info">
+        <div class="setting-icon">🏖️</div>
+        <div>
+          <div class="setting-name">Ferien-Überzeit anzeigen</div>
+          <div class="setting-desc">Zweite Progressbar nach dem Tagesziel im Arbeitszeitrechner</div>
+        </div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="ferien-bar-toggle" onchange="saveFerienBar(this.checked)">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+
+    <div class="setting-row clickable" onclick="toggleDiamant()">
+      <div class="setting-info">
+        <div class="setting-icon">💎</div>
+        <div>
+          <div class="setting-name">Diamant anzeigen</div>
+          <div class="setting-desc">Belohnungs-Diamant nach dem Tagesziel anzeigen</div>
+        </div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="diamant-toggle" onchange="saveDiamant(this.checked)">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+  </div>
+
   <!-- Bookmarklet -->
   <div class="card">
-    <div class="card-label">Bookmarklet – Zeiterfassung</div>
-
-    <div class="bookmarklet-section">
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div>
-            <div class="step-title">Bookmarklet in Lesezeichenleiste ziehen</div>
-            <div class="step-desc">Schaltfläche unten halten und in die Browser-Lesezeichenleiste ziehen.</div>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div>
-            <div class="step-title">Auf der Zeiterfassungsseite klicken</div>
-            <div class="step-desc">Navigiere zur Seite mit deinen Zeitstempeln und klicke das Bookmarklet.</div>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div>
-            <div class="step-title">Automatische Berechnung</div>
-            <div class="step-desc">Der Arbeitszeitrechner öffnet sich mit allen erkannten Zeitstempeln.</div>
-          </div>
+    <div class="setting-row clickable" onclick="toggleBookmarklet()" style="border-top:none;">
+      <div class="setting-info">
+        <div class="setting-icon">🔖</div>
+        <div>
+          <div class="setting-name">Bookmarklet – Zeiterfassung</div>
+          <div class="setting-desc">Zeitstempel automatisch aus dem Browser erfassen</div>
         </div>
       </div>
+      <span id="bookmarklet-chevron" style="color:var(--muted);font-size:0.75rem;transition:transform 0.2s;display:inline-block;">▼</span>
+    </div>
 
-      <div style="margin-bottom: 14px;">
-        <a class="bookmarklet-btn" href="javascript:(function(){const elements=Array.from(document.querySelectorAll('*'));const timestamps=elements.map(el=>el.textContent.trim()).filter(text=>/^\d{2}:\d{2}:\d{2}$/.test(text));const uniqueTimestamps=Array.from(new Set(timestamps));if(uniqueTimestamps.length>0){const joined=uniqueTimestamps.join(';');const url='https://michael-jutzi.github.io/tools/arbeitszeitrechner/arbeitszeitrechner.html?timestamps='+encodeURIComponent(joined);window.open(url,'_blank','noopener,noreferrer,width=600,height=700,left=200,top=200');}else{alert('Keine gültigen Zeitstempel im Format 00:00:00 gefunden.');}})();">
-          ⏰ Zeit berechnen
-        </a>
-      </div>
+    <div id="bookmarklet-body" style="display:none;">
+      <div class="bookmarklet-section">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <div class="step-title">Bookmarklet in Lesezeichenleiste ziehen</div>
+              <div class="step-desc">Schaltfläche unten halten und in die Browser-Lesezeichenleiste ziehen.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <div class="step-title">Auf der Zeiterfassungsseite klicken</div>
+              <div class="step-desc">Navigiere zur Seite mit deinen Zeitstempeln und klicke das Bookmarklet.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <div class="step-title">Automatische Berechnung</div>
+              <div class="step-desc">Der Arbeitszeitrechner öffnet sich mit allen erkannten Zeitstempeln.</div>
+            </div>
+          </div>
+        </div>
 
-      <div class="hint">
-        Sucht alle Texte im Format <strong>HH:MM:SS</strong> auf der aktuellen Seite und öffnet den Arbeitszeitrechner damit.
+        <div style="margin-bottom: 14px;">
+          <a class="bookmarklet-btn" href="javascript:(function(){const elements=Array.from(document.querySelectorAll('*'));const timestamps=elements.map(el=>el.textContent.trim()).filter(text=>/^\d{2}:\d{2}:\d{2}$/.test(text));const uniqueTimestamps=Array.from(new Set(timestamps));if(uniqueTimestamps.length>0){const joined=uniqueTimestamps.join(';');const url='https://michael-jutzi.github.io/tools/arbeitszeitrechner/arbeitszeitrechner.html?timestamps='+encodeURIComponent(joined);window.open(url,'_blank','noopener,noreferrer,width=600,height=700,left=200,top=200');}else{alert('Keine gültigen Zeitstempel im Format 00:00:00 gefunden.');}})();">
+            ⏰ Zeit berechnen
+          </a>
+        </div>
+
+        <div class="hint">
+          Sucht alle Texte im Format <strong>HH:MM:SS</strong> auf der aktuellen Seite und öffnet den Arbeitszeitrechner damit.
+        </div>
       </div>
     </div>
   </div>
@@ -360,12 +406,50 @@
     }
   }
 
+  // --- Bookmarklet ---
+  function toggleBookmarklet() {
+    const body = document.getElementById('bookmarklet-body');
+    const chevron = document.getElementById('bookmarklet-chevron');
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : '';
+  }
+
+  // --- Diamant ---
+  function saveDiamant(enabled) {
+    setCookie('diamant_visible', enabled ? '1' : '0');
+    showToast();
+  }
+  function toggleDiamant() {
+    const cb = document.getElementById('diamant-toggle');
+    cb.checked = !cb.checked;
+    saveDiamant(cb.checked);
+  }
+
+  // --- Ferien-Bar ---
+  function saveFerienBar(enabled) {
+    setCookie('ferien_bar_visible', enabled ? '1' : '0');
+    showToast();
+  }
+
+  function toggleFerienBar() {
+    const cb = document.getElementById('ferien-bar-toggle');
+    cb.checked = !cb.checked;
+    saveFerienBar(cb.checked);
+  }
+
   // --- Init ---
   const savedTheme = getCookie('theme') || 'light';
   applyTheme(savedTheme);
 
   const savedStunden = getCookie('standardstunden');
   if (savedStunden) document.getElementById('stunden-input').value = savedStunden;
+
+  const ferienBarVisible = getCookie('ferien_bar_visible');
+  document.getElementById('ferien-bar-toggle').checked = ferienBarVisible !== '0';
+
+  const diamantVisible = getCookie('diamant_visible');
+  document.getElementById('diamant-toggle').checked = diamantVisible !== '0';
 </script>
 </body>
 </html>

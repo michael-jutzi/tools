@@ -230,6 +230,21 @@
     <div class="progress-milestones" id="progress-milestones">
       <span>0h</span><span>4h</span><span>8.3h</span>
     </div>
+
+    <!-- Ferien-Überzeit Bar -->
+    <div id="ferien-bar-wrap" style="display:none; margin-top:14px;">
+      <div class="progress-header" style="margin-bottom:6px;">
+        <span class="card-label" style="margin:0">🏖️ Ferien-Überzeit</span>
+        <span class="progress-pct" id="ferien-bar-pct" style="color:#f59e0b">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="ferien-bar-fill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width 0.5s ease;width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.7rem;color:var(--muted);">
+        <span id="ferien-bar-start">8.3h</span>
+        <span id="ferien-bar-end">+0.27h</span>
+      </div>
+    </div>
   </div>
 
   <div class="card" id="diamond-card" style="display:none">
@@ -364,19 +379,48 @@ function startLiveUpdate(bisherSekunden, startSekunden) {
   }, 1000);
 }
 
+function getFerienUeberzeit() {
+  const v = document.cookie.split('; ').reduce((acc, p) => {
+    const [k, val] = p.split('='); return k === 'ferien_ueberzeit_pro_tag' ? parseFloat(decodeURIComponent(val)) : acc;
+  }, null);
+  return (v !== null && !isNaN(v) && v > 0) ? v : 0;
+}
+
 function setProgress(sekunden) {
-  const SOLL = isWeekend() ? getStandardStunden() * 3600 : getStandardStunden() * 3600;
+  const SOLL = getStandardStunden() * 3600;
   const pct = Math.min(100, (sekunden / SOLL) * 100);
   const fill = document.getElementById('progress-fill');
   fill.style.width = pct.toFixed(1) + '%';
   fill.className = 'progress-fill' + (pct >= 100 ? ' done' : '');
   document.getElementById('progress-pct').innerText = pct.toFixed(0) + '%';
+
+  // Ferien-Überzeit Bar
+  const ferienH = getFerienUeberzeit();
+  const ferienBarEnabled = document.cookie.split('; ').reduce((acc, p) => {
+    const [k, v] = p.split('='); return k === 'ferien_bar_visible' ? v : acc;
+  }, '1') !== '0';
+  const ferienWrap = document.getElementById('ferien-bar-wrap');
+  if (ferienH > 0 && ferienBarEnabled) {
+    ferienWrap.style.display = 'block';
+    const ferienSek = ferienH * 3600;
+    const overtime = Math.max(0, sekunden - SOLL);
+    const ferienPct = Math.min(100, (overtime / ferienSek) * 100);
+    document.getElementById('ferien-bar-fill').style.width = ferienPct.toFixed(1) + '%';
+    document.getElementById('ferien-bar-pct').innerText = ferienPct.toFixed(0) + '%';
+    document.getElementById('ferien-bar-start').innerText = getStandardStunden() + 'h';
+    document.getElementById('ferien-bar-end').innerText = '+' + ferienH.toFixed(2) + 'h';
+  } else {
+    ferienWrap.style.display = 'none';
+  }
 }
 
 function updateDiamond(aktuell) {
+  const diamantEnabled = document.cookie.split('; ').reduce((acc, p) => {
+    const [k, v] = p.split('='); return k === 'diamant_visible' ? v : acc;
+  }, '1') !== '0';
   const DIAMOND_START = getDiamondStart();
   const GOLD_START = getGoldStart();
-  if (aktuell > DIAMOND_START) {
+  if (aktuell > DIAMOND_START && diamantEnabled) {
     document.getElementById('diamond-card').style.display = 'block';
     const fillPct = Math.max(0, Math.min(100, (aktuell - DIAMOND_START) / 3600 * 100));
     document.getElementById('color').style.clipPath = `inset(${(100 - fillPct).toFixed(1)}% 0px 0px 0px)`;

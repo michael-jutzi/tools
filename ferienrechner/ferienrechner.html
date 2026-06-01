@@ -115,6 +115,8 @@
       border-radius: 10px;
       overflow: hidden;
       background: var(--input-bg);
+      width: 130px;
+      flex-shrink: 0;
     }
 
     .num-btn {
@@ -333,13 +335,13 @@
 
       <div class="input-row">
         <div>
-          <div class="input-label">Arbeitsstunden pro Tag</div>
-          <div class="input-sublabel">Standard: 8.3h</div>
+          <div class="input-label">GCFV</div>
+          <div class="input-sublabel">Bis Ende Jahr</div>
         </div>
         <div class="number-input-wrap">
-          <button class="num-btn" onclick="adjustVal('stundenprotag', -0.1)">−</button>
-          <input class="num-display" type="number" id="stundenprotag" value="8.3" min="1" max="24" step="0.1" oninput="berechne()">
-          <button class="num-btn" onclick="adjustVal('stundenprotag', 0.1)">+</button>
+          <button class="num-btn" onclick="adjustVal('gcfv', -1)">−</button>
+          <input class="num-display" type="number" id="gcfv" value="0" min="0" max="99" oninput="berechne()">
+          <button class="num-btn" onclick="adjustVal('gcfv', 1)">+</button>
         </div>
       </div>
 
@@ -353,6 +355,15 @@
           <input class="num-display" type="number" id="guthaben" value="0" min="0" max="9999" step="0.5" oninput="berechne()">
           <button class="num-btn" onclick="adjustVal('guthaben', 0.5)">+</button>
         </div>
+      </div>
+
+      <div class="input-row">
+        <div>
+          <div class="input-label">Arbeitsstunden pro Tag</div>
+          <div class="input-sublabel">Aus <a href="../einstellungen/einstellungen.html" style="color:#4f7fff;text-decoration:none">Einstellungen</a></div>
+        </div>
+        <div style="width:130px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);height:36px;font-size:0.95rem;font-weight:600;color:var(--muted)" id="stundenprotag-display">8.3h</div>
+        <input type="hidden" id="stundenprotag" value="8.3">
       </div>
 
     </div>
@@ -369,11 +380,26 @@
 </div>
 
 <script>
-  function getStandardStunden() {
-    const v = document.cookie.split('; ').reduce((acc, p) => {
-      const [k, val] = p.split('='); return k === 'standardstunden' ? parseFloat(decodeURIComponent(val)) : acc;
+  function getCookie(name) {
+    return document.cookie.split('; ').reduce((acc, p) => {
+      const [k, v] = p.split('='); return k === name ? decodeURIComponent(v) : acc;
     }, null);
-    return (v !== null && !isNaN(v)) ? v : 8.3;
+  }
+
+  function setCookie(name, value) {
+    document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${60*60*24*365}`;
+  }
+
+  function getStandardStunden() {
+    const v = getCookie('standardstunden');
+    const n = parseFloat(v);
+    return (!isNaN(n)) ? n : 8.3;
+  }
+
+  function saveInputs() {
+    setCookie('ferien_ferientage', document.getElementById('ferientage').value);
+    setCookie('ferien_gcfv',       document.getElementById('gcfv').value);
+    setCookie('ferien_guthaben',   document.getElementById('guthaben').value);
   }
 
   function adjustVal(id, delta) {
@@ -407,7 +433,9 @@
   }
 
   function berechne() {
-    const ferientage = Math.max(0, parseFloat(document.getElementById('ferientage').value) || 0);
+    const ferientageBasis = Math.max(0, parseFloat(document.getElementById('ferientage').value) || 0);
+    const gcfv = Math.max(0, parseInt(document.getElementById('gcfv').value) || 0);
+    const ferientage = ferientageBasis + gcfv * 4;
     const stundenProTag = Math.max(0.1, parseFloat(document.getElementById('stundenprotag').value) || 8.3);
     const guthaben = Math.max(0, parseFloat(document.getElementById('guthaben').value) || 0);
 
@@ -493,8 +521,16 @@
     html += `<div class="card">
       <div class="card-label">Details</div>
       <div class="detail-list">
+        ${gcfv > 0 ? `<div class="detail-row">
+          <span class="detail-key">Basis-Ferientage</span>
+          <span class="detail-val">${ferientageBasis} Tage</span>
+        </div>
         <div class="detail-row">
-          <span class="detail-key">Ferientage × Stunden pro Tag</span>
+          <span class="detail-key">GCFV-Reisen (${gcfv} × 4 Tage)</span>
+          <span class="detail-val">+ ${gcfv * 4} Tage</span>
+        </div>` : ''}
+        <div class="detail-row">
+          <span class="detail-key">Ferientage total × Stunden pro Tag</span>
           <span class="detail-val">${ferientage} × ${stundenProTag}h = ${formatH(ferienStundenGesamt)}</span>
         </div>
         <div class="detail-row">
@@ -531,10 +567,24 @@
     }
 
     document.getElementById('result-section').innerHTML = html;
+
+    // Eingaben + berechnete Überzeit in Cookies speichern
+    saveInputs();
+    setCookie('ferien_ueberzeit_pro_tag', zielErreicht ? '0' : ueberzeitProTag.toFixed(4));
   }
 
+  // Init: gespeicherte Werte laden
+  const ferientageSaved = getCookie('ferien_ferientage');
+  const gcfvSaved       = getCookie('ferien_gcfv');
+  const guthabenSaved   = getCookie('ferien_guthaben');
+  if (ferientageSaved !== null) document.getElementById('ferientage').value = ferientageSaved;
+  if (gcfvSaved       !== null) document.getElementById('gcfv').value       = gcfvSaved;
+  if (guthabenSaved   !== null) document.getElementById('guthaben').value   = guthabenSaved;
+
   // Standard-Stunden aus Cookie setzen
-  document.getElementById('stundenprotag').value = getStandardStunden();
+  const std = getStandardStunden();
+  document.getElementById('stundenprotag').value = std;
+  document.getElementById('stundenprotag-display').textContent = std + 'h';
 
   // Initial berechnen
   berechne();
