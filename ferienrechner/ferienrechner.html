@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ferienrechner</title>
+  <script src="../theme.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --border: #e4e6eb;
+      --text: #1a1a2e;
+      --text-secondary: #444;
+      --muted: #999;
+      --very-muted: #ccc;
+      --input-bg: #f7f8fa;
+      --btn-bg: #f7f8fa;
+      --btn-hover: #eef1f8;
+      --btn-color: #555;
+      --progress-track: #f0f2f5;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --highlight-bg: #f0f5ff;
+      --highlight-border: #c7d9ff;
+      --success-bg: #f0faf4;
+      --success-border: #c6e9d4;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e0e0e0;
+      --text-secondary: #c8c8d0;
+      --muted: #555;
+      --very-muted: #3a3d4a;
+      --input-bg: #0f1117;
+      --btn-bg: #22253a;
+      --btn-hover: #2d3152;
+      --btn-color: #c0c0c0;
+      --progress-track: #0f1117;
+      --shadow: none;
+      --highlight-bg: #141a2e;
+      --highlight-border: #2a3a6a;
+      --success-bg: #0f1f18;
+      --success-border: #1a3d28;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    .back-link { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .back-link:hover { color: var(--text-secondary); }
+    h1 { font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .input-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+    .input-sublabel {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .number-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--input-bg);
+    }
+
+    .num-btn {
+      width: 36px; height: 36px;
+      background: var(--btn-bg);
+      border: none;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .num-btn:hover { background: var(--btn-hover); color: #4f7fff; }
+
+    .num-display {
+      min-width: 52px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      padding: 0 4px;
+      border: none;
+      background: var(--input-bg);
+      outline: none;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Hide number input arrows */
+    .num-display::-webkit-inner-spin-button,
+    .num-display::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .num-display[type=number] { -moz-appearance: textfield; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+    button.primary {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #4f7fff;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    button.primary:hover { background: #3a6aee; }
+
+    /* Result cards */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      transition: background 0.2s;
+    }
+
+    .stat-card.highlight {
+      background: var(--highlight-bg);
+      border-color: var(--highlight-border);
+    }
+
+    .stat-card.success {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+    }
+
+    .stat-icon { font-size: 1.3rem; margin-bottom: 8px; }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-value.blue { color: #4f7fff; }
+    .stat-value.green { color: #38a169; }
+    .stat-value.orange { color: #d97706; }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+
+    /* Main result card */
+    .main-result {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .main-result-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .overtime-display {
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: #4f7fff;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .overtime-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .progress-wrap { margin-top: 16px; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .progress-label { font-size: 0.78rem; color: var(--muted); }
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--progress-track);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #4f7fff, #7c4dff);
+      transition: width 0.6s ease;
+    }
+
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-key { color: var(--muted); }
+    .detail-val { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--very-muted);
+      font-size: 0.9rem;
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+    .warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: #92400e;
+      display: none;
+    }
+    [data-theme="dark"] .warning {
+      background: #1f1500;
+      border-color: #4a3500;
+      color: #fbbf24;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <a class="back-link" href="../index.html">&#8592; Tools</a>
+    <h1>Ferienrechner</h1>
+  </header>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-label">Eingabe</div>
+    <div class="input-group">
+
+      <div class="input-row">
+        <div>
+          <div class="input-label">Noch zu beziehende Ferientage</div>
+          <div class="input-sublabel">Bis Ende Jahr</div>
+        </div>
+        <div class="number-input-wrap">
+          <button class="num-btn" onclick="adjustVal('ferientage', -1)">−</button>
+          <input class="num-display" type="number" id="ferientage" value="5" min="0" max="365" oninput="berechne()">
+          <button class="num-btn" onclick="adjustVal('ferientage', 1)">+</button>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div>
+          <div class="input-label">Arbeitsstunden pro Tag</div>
+          <div class="input-sublabel">Standard: 8.3h</div>
+        </div>
+        <div class="number-input-wrap">
+          <button class="num-btn" onclick="adjustVal('stundenprotag', -0.1)">−</button>
+          <input class="num-display" type="number" id="stundenprotag" value="8.3" min="1" max="24" step="0.1" oninput="berechne()">
+          <button class="num-btn" onclick="adjustVal('stundenprotag', 0.1)">+</button>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div>
+          <div class="input-label">Bereits angespartes Überzeitguthaben</div>
+          <div class="input-sublabel">In Stunden (optional)</div>
+        </div>
+        <div class="number-input-wrap">
+          <button class="num-btn" onclick="adjustVal('guthaben', -0.5)">−</button>
+          <input class="num-display" type="number" id="guthaben" value="0" min="0" max="9999" step="0.5" oninput="berechne()">
+          <button class="num-btn" onclick="adjustVal('guthaben', 0.5)">+</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Ergebnis Hauptkarte -->
+  <div id="result-section">
+    <div class="card" style="text-align:center; padding: 40px 24px;">
+      <div class="empty-icon">🏖️</div>
+      <div class="empty-state">Eingaben oben anpassen um die Berechnung zu sehen</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function getStandardStunden() {
+    const v = document.cookie.split('; ').reduce((acc, p) => {
+      const [k, val] = p.split('='); return k === 'standardstunden' ? parseFloat(decodeURIComponent(val)) : acc;
+    }, null);
+    return (v !== null && !isNaN(v)) ? v : 8.3;
+  }
+
+  function adjustVal(id, delta) {
+    const el = document.getElementById(id);
+    const step = parseFloat(el.step) || 1;
+    const val = parseFloat(el.value) || 0;
+    const newVal = Math.max(parseFloat(el.min) || 0, val + delta);
+    el.value = Number.isInteger(delta) ? Math.round(newVal) : newVal.toFixed(Math.abs(delta) < 1 ? 1 : 0);
+    berechne();
+  }
+
+  function arbeitstageVonBisEndeJahr() {
+    const heute = new Date();
+    const endeJahr = new Date(heute.getFullYear(), 11, 31);
+    let count = 0;
+    const cursor = new Date(heute);
+    cursor.setDate(cursor.getDate() + 1); // ab morgen
+    while (cursor <= endeJahr) {
+      const dow = cursor.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return count;
+  }
+
+  function formatH(stunden) {
+    const h = Math.floor(Math.abs(stunden));
+    const m = Math.round((Math.abs(stunden) - h) * 60);
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
+  }
+
+  function berechne() {
+    const ferientage = Math.max(0, parseFloat(document.getElementById('ferientage').value) || 0);
+    const stundenProTag = Math.max(0.1, parseFloat(document.getElementById('stundenprotag').value) || 8.3);
+    const guthaben = Math.max(0, parseFloat(document.getElementById('guthaben').value) || 0);
+
+    const arbeitstage = arbeitstageVonBisEndeJahr();
+    const benoetigteStunden = ferientage * stundenProTag;
+    const nochNoetig = Math.max(0, benoetigteStunden - guthaben);
+    const ueberzeitProTag = arbeitstage > 0 ? nochNoetig / arbeitstage : 0;
+
+    const heute = new Date();
+    const endeJahr = new Date(heute.getFullYear(), 11, 31);
+    const jahresfortschritt = Math.round(
+      ((heute - new Date(heute.getFullYear(), 0, 1)) /
+       (endeJahr - new Date(heute.getFullYear(), 0, 1))) * 100
+    );
+
+    const ferienStundenGesamt = ferientage * stundenProTag;
+    const guthabenPct = Math.min(100, guthaben / ferienStundenGesamt * 100) || 0;
+
+    const zielErreicht = guthaben >= benoetigteStunden;
+
+    let html = '';
+
+    if (ferientage === 0) {
+      html = `<div class="card" style="text-align:center; padding: 40px 24px;">
+        <div class="empty-icon">✅</div>
+        <div class="empty-state">Keine Ferientage eingetragen.</div>
+      </div>`;
+      document.getElementById('result-section').innerHTML = html;
+      return;
+    }
+
+    // Hauptanzeige
+    if (zielErreicht) {
+      html += `
+      <div class="main-result">
+        <div class="main-result-label">Überzeit pro Tag benötigt</div>
+        <div class="overtime-display" style="color:#38a169">Ziel erreicht! 🎉</div>
+        <div class="overtime-sub">Dein Guthaben von ${formatH(guthaben)} reicht für ${ferientage} Ferientag${ferientage !== 1 ? 'e' : ''}.</div>
+      </div>`;
+    } else {
+      html += `
+      <div class="main-result">
+        <div class="main-result-label">Überzeit pro Arbeitstag benötigt</div>
+        <div class="overtime-display">+${ueberzeitProTag.toFixed(2)}h</div>
+        <div class="overtime-sub">${formatH(ueberzeitProTag)} extra pro Tag über ${arbeitstage} Arbeitstage</div>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span class="progress-label">Guthaben-Fortschritt</span>
+            <span class="progress-label">${guthabenPct.toFixed(0)}% angespart</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${guthabenPct.toFixed(1)}%"></div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Stat-Grid
+    html += `<div class="result-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value blue">${arbeitstage}</div>
+        <div class="stat-label">Verbleibende Arbeitstage bis Ende ${heute.getFullYear()}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏖️</div>
+        <div class="stat-value orange">${ferientage}</div>
+        <div class="stat-label">Ferientage noch zu beziehen</div>
+      </div>
+      <div class="stat-card ${zielErreicht ? 'success' : 'highlight'}">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value ${zielErreicht ? 'green' : 'blue'}">${formatH(benoetigteStunden)}</div>
+        <div class="stat-label">Benötigte Überzeitstunden total</div>
+      </div>
+      <div class="stat-card ${guthaben > 0 ? 'success' : ''}">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value ${guthaben > 0 ? 'green' : ''}">${formatH(guthaben)}</div>
+        <div class="stat-label">Bereits angespartes Guthaben</div>
+      </div>
+    </div>`;
+
+    // Detailtabelle
+    html += `<div class="card">
+      <div class="card-label">Details</div>
+      <div class="detail-list">
+        <div class="detail-row">
+          <span class="detail-key">Ferientage × Stunden pro Tag</span>
+          <span class="detail-val">${ferientage} × ${stundenProTag}h = ${formatH(ferienStundenGesamt)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Abzüglich Guthaben</span>
+          <span class="detail-val">− ${formatH(guthaben)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Noch zu erarbeiten</span>
+          <span class="detail-val">${formatH(nochNoetig)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Verbleibende Arbeitstage</span>
+          <span class="detail-val">${arbeitstage} Tage</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Überzeit pro Tag</span>
+          <span class="detail-val" style="color:#4f7fff">+ ${ueberzeitProTag.toFixed(2)}h (${formatH(ueberzeitProTag)})</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Damit Arbeitszeit pro Tag</span>
+          <span class="detail-val">${(stundenProTag + ueberzeitProTag).toFixed(2)}h (${formatH(stundenProTag + ueberzeitProTag)})</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Jahresfortschritt</span>
+          <span class="detail-val">${jahresfortschritt}% des Jahres vergangen</span>
+        </div>
+      </div>
+    </div>`;
+
+    if (arbeitstage < 10 && !zielErreicht) {
+      html += `<div class="warning" style="display:block">
+        ⚠️ Nur noch ${arbeitstage} Arbeitstage verbleiben – das Ziel ist schwer zu erreichen.
+      </div>`;
+    }
+
+    document.getElementById('result-section').innerHTML = html;
+  }
+
+  // Standard-Stunden aus Cookie setzen
+  document.getElementById('stundenprotag').value = getStandardStunden();
+
+  // Initial berechnen
+  berechne();
+
+  // Live-Update bei Eingabe
+  document.querySelectorAll('.num-display').forEach(el => {
+    el.addEventListener('change', berechne);
+  });
+</script>
+</body>
+</html>

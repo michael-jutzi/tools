@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbeitszeitrechner – Setup</title>
+  <script src="../theme.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --border: #e4e6eb;
+      --text: #1a1a2e;
+      --text-secondary: #555;
+      --muted: #999;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --step-bg: #f7f8fa;
+      --hint-bg: #f7f9ff;
+      --hint-border: #4f7fff;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e0e0e0;
+      --text-secondary: #aaa;
+      --muted: #555;
+      --shadow: none;
+      --step-bg: #151720;
+      --hint-bg: #12151f;
+      --hint-border: #4f7fff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    .back-link { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .back-link:hover { color: var(--text-secondary); }
+    h1 { font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-label {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+
+    .step { display: flex; gap: 16px; margin-bottom: 20px; }
+    .step:last-child { margin-bottom: 0; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: var(--step-bg);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #4f7fff;
+    }
+
+    .step-content { flex: 1; }
+    .step-title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .step-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    .bookmarklet-wrap { margin-top: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .bookmarklet-label { font-size: 0.8rem; color: var(--muted); }
+
+    .bookmarklet-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, #4f7fff, #7c4dff);
+      color: #fff; font-weight: 600; font-size: 0.9rem;
+      border-radius: 10px; text-decoration: none;
+      cursor: grab; user-select: none;
+      box-shadow: 0 4px 20px rgba(79,127,255,0.25);
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    .bookmarklet-btn:hover { box-shadow: 0 6px 28px rgba(79,127,255,0.4); transform: translateY(-1px); }
+    .bookmarklet-btn:active { transform: scale(0.98); }
+
+    .hint {
+      background: var(--hint-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--hint-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.8rem; color: var(--muted); line-height: 1.5;
+      margin-top: 8px;
+    }
+    .hint strong { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <a class="back-link" href="../index.html">&#8592; Tools</a>
+    <h1>Setup – Bookmarklet</h1>
+  </header>
+
+  <div class="card">
+    <div class="card-label">Einrichtung</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Bookmarklet in die Lesezeichenleiste ziehen</div>
+        <div class="step-desc">Halte die Schaltfläche unten und ziehe sie in deine Browser-Lesezeichenleiste.</div>
+        <div class="bookmarklet-wrap">
+          <span class="bookmarklet-label">&#8595; Ziehe dieses Bookmarklet in deine Lesezeichenleiste</span>
+          <a class="bookmarklet-btn" href="javascript:(function(){const elements=Array.from(document.querySelectorAll('*'));const timestamps=elements.map(el=>el.textContent.trim()).filter(text=>/^\d{2}:\d{2}:\d{2}$/.test(text));const uniqueTimestamps=Array.from(new Set(timestamps));if(uniqueTimestamps.length>0){const joined=uniqueTimestamps.join(';');const url='https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html?timestamps='+encodeURIComponent(joined);window.open(url,'_blank','noopener,noreferrer,width=600,height=700,left=200,top=200');}else{alert('Keine gültigen Zeitstempel im Format 00:00:00 gefunden.');}})();">
+            &#9200; Zeit berechnen
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Auf der Zeiterfassungs-Webseite öffnen</div>
+        <div class="step-desc">Navigiere zur Seite mit deinen Zeitstempeln und klicke das Bookmarklet in der Lesezeichenleiste.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Automatische Berechnung</div>
+        <div class="step-desc">Der Arbeitszeitrechner öffnet sich automatisch mit deinen Zeitstempeln.</div>
+      </div>
+    </div>
+
+    <div class="hint">
+      Das Bookmarklet sucht alle Texte im Format <strong>HH:MM:SS</strong> auf der aktuellen Seite und übergibt sie als URL-Parameter an den Arbeitszeitrechner.
+    </div>
+  </div>
+</div>
+</body>
+</html>

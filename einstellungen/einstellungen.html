@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Einstellungen</title>
+  <script src="../theme.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --border: #e4e6eb;
+      --text: #1a1a2e;
+      --text-secondary: #555;
+      --muted: #999;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --row-hover: #f7f8fa;
+      --toggle-off: #d1d5db;
+      --input-bg: #f7f8fa;
+      --step-bg: #f7f8fa;
+      --hint-bg: #f7f9ff;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e0e0e0;
+      --text-secondary: #aaa;
+      --muted: #555;
+      --shadow: none;
+      --row-hover: #1e2233;
+      --toggle-off: #333;
+      --input-bg: #0f1117;
+      --step-bg: #151720;
+      --hint-bg: #12151f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    .back-link { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .back-link:hover { color: var(--text); }
+    h1 { font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .card-label {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+      padding: 20px 24px 12px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-top: 1px solid var(--border);
+      transition: background 0.15s;
+      gap: 16px;
+    }
+    .setting-row.clickable { cursor: pointer; user-select: none; }
+    .setting-row.clickable:hover { background: var(--row-hover); }
+
+    .setting-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .setting-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .setting-name { font-size: 0.95rem; font-weight: 500; color: var(--text); }
+    .setting-desc { font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+
+    /* Toggle */
+    .toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: var(--toggle-off);
+      border-radius: 99px;
+      transition: background 0.25s;
+    }
+    .toggle input:checked + .toggle-track { background: #4f7fff; }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.25s;
+      pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+    /* Number input */
+    .number-input-wrap {
+      display: flex; align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--input-bg);
+      flex-shrink: 0;
+    }
+    .num-btn {
+      width: 34px; height: 34px;
+      background: transparent;
+      border: none; color: var(--text);
+      font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .num-btn:hover { background: var(--row-hover); color: #4f7fff; }
+    .num-display {
+      width: 48px; text-align: center;
+      font-size: 0.95rem; font-weight: 600;
+      color: var(--text); padding: 0 2px;
+      border: none; background: transparent;
+      outline: none;
+    }
+    .num-display::-webkit-inner-spin-button,
+    .num-display::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .num-display[type=number] { -moz-appearance: textfield; }
+
+    /* Theme swatches */
+    .theme-preview {
+      display: flex; gap: 12px;
+      padding: 14px 24px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .preview-swatch {
+      flex: 1; height: 52px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .preview-swatch:hover { transform: scale(1.03); }
+    .swatch-light { background: #f0f2f5; color: #444; }
+    .swatch-dark  { background: #0f1117; color: #aaa; }
+    .swatch-light.active,
+    .swatch-dark.active  { border-color: #4f7fff; }
+
+    /* Bookmarklet */
+    .bookmarklet-section { padding: 16px 24px 20px; border-top: 1px solid var(--border); }
+
+    .steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+    .step { display: flex; gap: 14px; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 24px; height: 24px;
+      background: var(--step-bg); border: 1px solid var(--border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: #4f7fff;
+    }
+    .step-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .step-desc  { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+
+    .bookmarklet-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px;
+      background: linear-gradient(135deg, #4f7fff, #7c4dff);
+      color: #fff; font-weight: 600; font-size: 0.85rem;
+      border-radius: 9px; text-decoration: none;
+      cursor: grab; user-select: none;
+      box-shadow: 0 3px 14px rgba(79,127,255,0.25);
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    .bookmarklet-btn:hover { box-shadow: 0 5px 22px rgba(79,127,255,0.4); transform: translateY(-1px); }
+
+    .hint {
+      background: var(--hint-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid #4f7fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.78rem; color: var(--muted); line-height: 1.5;
+    }
+    .hint strong { color: var(--text-secondary); }
+
+    .saved-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1a1a2e; color: #fff;
+      padding: 10px 20px; border-radius: 99px;
+      font-size: 0.82rem; font-weight: 500;
+      opacity: 0; transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none; white-space: nowrap;
+    }
+    [data-theme="dark"] .saved-toast { background: #e0e0e0; color: #1a1a2e; }
+    .saved-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <a class="back-link" href="../index.html">&#8592; Tools</a>
+    <h1>Einstellungen</h1>
+  </header>
+
+  <!-- Darstellung -->
+  <div class="card">
+    <div class="card-label">Darstellung</div>
+
+    <div class="setting-row clickable" onclick="toggleTheme()">
+      <div class="setting-info">
+        <div class="setting-icon" id="theme-icon">🌙</div>
+        <div>
+          <div class="setting-name">Dark Mode</div>
+          <div class="setting-desc" id="theme-desc">Dunkles Design aktivieren</div>
+        </div>
+      </div>
+      <label class="toggle" onclick="event.stopPropagation()">
+        <input type="checkbox" id="dark-toggle" onchange="applyTheme(this.checked ? 'dark' : 'light')">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+
+    <div class="theme-preview">
+      <div class="preview-swatch swatch-light" id="swatch-light" onclick="applyTheme('light')">☀️ Hell</div>
+      <div class="preview-swatch swatch-dark"  id="swatch-dark"  onclick="applyTheme('dark')">🌙 Dunkel</div>
+    </div>
+  </div>
+
+  <!-- Arbeitszeit -->
+  <div class="card">
+    <div class="card-label">Arbeitszeit</div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-icon">⏱️</div>
+        <div>
+          <div class="setting-name">Arbeitsstunden pro Tag</div>
+          <div class="setting-desc">Wird in allen Tools als Standard verwendet</div>
+        </div>
+      </div>
+      <div class="number-input-wrap">
+        <button class="num-btn" onclick="adjustStunden(-0.1)">−</button>
+        <input class="num-display" type="number" id="stunden-input" value="8.3" min="1" max="24" step="0.1" oninput="saveStunden()">
+        <button class="num-btn" onclick="adjustStunden(0.1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookmarklet -->
+  <div class="card">
+    <div class="card-label">Bookmarklet – Zeiterfassung</div>
+
+    <div class="bookmarklet-section">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Bookmarklet in Lesezeichenleiste ziehen</div>
+            <div class="step-desc">Schaltfläche unten halten und in die Browser-Lesezeichenleiste ziehen.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Auf der Zeiterfassungsseite klicken</div>
+            <div class="step-desc">Navigiere zur Seite mit deinen Zeitstempeln und klicke das Bookmarklet.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Automatische Berechnung</div>
+            <div class="step-desc">Der Arbeitszeitrechner öffnet sich mit allen erkannten Zeitstempeln.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <a class="bookmarklet-btn" href="javascript:(function(){const elements=Array.from(document.querySelectorAll('*'));const timestamps=elements.map(el=>el.textContent.trim()).filter(text=>/^\d{2}:\d{2}:\d{2}$/.test(text));const uniqueTimestamps=Array.from(new Set(timestamps));if(uniqueTimestamps.length>0){const joined=uniqueTimestamps.join(';');const url='https://sap-ha-monitoring.bit.admin.ch/public/custom/arbeitszeitrechner.html?timestamps='+encodeURIComponent(joined);window.open(url,'_blank','noopener,noreferrer,width=600,height=700,left=200,top=200');}else{alert('Keine gültigen Zeitstempel im Format 00:00:00 gefunden.');}})();">
+          ⏰ Zeit berechnen
+        </a>
+      </div>
+
+      <div class="hint">
+        Sucht alle Texte im Format <strong>HH:MM:SS</strong> auf der aktuellen Seite und öffnet den Arbeitszeitrechner damit.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="saved-toast" id="toast">✓ Gespeichert</div>
+
+<script>
+  function getCookie(name) {
+    return document.cookie.split('; ').reduce((val, part) => {
+      const [k, v] = part.split('=');
+      return k === name ? decodeURIComponent(v) : val;
+    }, null);
+  }
+
+  function setCookie(name, value) {
+    document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${60 * 60 * 24 * 365}`;
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // --- Theme ---
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    setCookie('theme', theme);
+    document.getElementById('dark-toggle').checked = theme === 'dark';
+    document.getElementById('theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+    document.getElementById('theme-desc').textContent =
+      theme === 'dark' ? 'Dunkles Design aktiv' : 'Dunkles Design aktivieren';
+    document.getElementById('swatch-light').classList.toggle('active', theme === 'light');
+    document.getElementById('swatch-dark').classList.toggle('active', theme === 'dark');
+    showToast();
+  }
+
+  function toggleTheme() {
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  // --- Stunden ---
+  function adjustStunden(delta) {
+    const el = document.getElementById('stunden-input');
+    const val = Math.max(1, Math.min(24, parseFloat(el.value) + delta));
+    el.value = val.toFixed(1);
+    saveStunden();
+  }
+
+  function saveStunden() {
+    const val = parseFloat(document.getElementById('stunden-input').value);
+    if (!isNaN(val) && val >= 1 && val <= 24) {
+      setCookie('standardstunden', val.toFixed(1));
+      showToast();
+    }
+  }
+
+  // --- Init ---
+  const savedTheme = getCookie('theme') || 'light';
+  applyTheme(savedTheme);
+
+  const savedStunden = getCookie('standardstunden');
+  if (savedStunden) document.getElementById('stunden-input').value = savedStunden;
+</script>
+</body>
+</html>

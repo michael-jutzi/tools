@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbeitszeitrechner</title>
+  <script src="../theme.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --border: #e4e6eb;
+      --text: #1a1a2e;
+      --text-secondary: #444;
+      --muted: #999;
+      --very-muted: #ccc;
+      --input-bg: #f7f8fa;
+      --btn-bg: #f7f8fa;
+      --btn-hover: #eef1f8;
+      --btn-color: #555;
+      --progress-track: #f0f2f5;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --bw-filter: grayscale(100%) brightness(0.85);
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e0e0e0;
+      --text-secondary: #c8c8d0;
+      --muted: #555;
+      --very-muted: #3a3d4a;
+      --input-bg: #0f1117;
+      --btn-bg: #22253a;
+      --btn-hover: #2d3152;
+      --btn-color: #c0c0c0;
+      --progress-track: #0f1117;
+      --shadow: none;
+      --bw-filter: grayscale(100%) brightness(0.6);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+
+    .back-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--text-secondary); }
+
+    h1 { font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.9rem;
+      padding: 12px 14px;
+      resize: vertical;
+      min-height: 120px;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: #4f7fff; }
+    textarea::placeholder { color: var(--very-muted); }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--btn-color);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--btn-hover); border-color: #4f7fff; color: #4f7fff; }
+
+    button.primary { background: #4f7fff; border-color: #4f7fff; color: #fff; }
+    button.primary:hover { background: #3a6aee; border-color: #3a6aee; color: #fff; }
+
+    .result-text { font-size: 1rem; line-height: 1.7; color: var(--text-secondary); white-space: pre-line; }
+
+    .live-badge { display: none; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .live-dot {
+      width: 8px; height: 8px;
+      background: #e53e3e;
+      border-radius: 50%;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.7); }
+    }
+    .live-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #e53e3e; }
+
+    .live-time {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .live-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+
+    .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .progress-pct { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--progress-track);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #4f7fff, #7c4dff);
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+    .progress-fill.done { background: linear-gradient(90deg, #38a169, #4f7fff); }
+    .progress-milestones { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7rem; color: var(--muted); }
+
+    .diamond-section { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .diamond-title { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+    #img-wrap {
+      position: relative;
+      width: 100px; height: 85px;
+      overflow: hidden;
+      filter: drop-shadow(0 4px 16px rgba(79,127,255,0.3));
+    }
+    #img-wrap img { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+    #color { z-index: 2; clip-path: inset(100% 0px 0px 0px); }
+    .bw { z-index: 1; filter: var(--bw-filter); }
+
+    .diamant-gold { opacity: 0; }
+    #diamant-gold-10 { z-index: 20; } #diamant-gold-9 { z-index: 19; }
+    #diamant-gold-8  { z-index: 18; } #diamant-gold-7 { z-index: 17; }
+    #diamant-gold-6  { z-index: 16; } #diamant-gold-5 { z-index: 15; }
+    #diamant-gold-4  { z-index: 14; } #diamant-gold-3 { z-index: 13; }
+    #diamant-gold-2  { z-index: 12; } #diamant-gold-1 { z-index: 11; }
+
+    .diamond-caption { font-size: 0.78rem; color: var(--muted); text-align: center; }
+    .empty-state { color: var(--very-muted); font-size: 0.9rem; text-align: center; padding: 8px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <a class="back-link" href="../index.html">&#8592; Tools</a>
+    <h1>Arbeitszeitrechner</h1>
+  </header>
+
+  <div class="card">
+    <div class="card-label">Zeitstempel</div>
+    <textarea id="timeInputs" rows="6" placeholder="0600&#10;1230&#10;1259&#10;1700"></textarea>
+    <div class="btn-row">
+      <button onclick="pauseHinzufuegen()">&#9200; 30 Min Pause</button>
+      <button onclick="stempelEntfernen()">&#128465; Löschen</button>
+      <button class="primary" onclick="berechneArbeitszeit()">&#128200; Berechnen</button>
+    </div>
+  </div>
+
+  <div class="card" id="result-card">
+    <div class="live-badge" id="live-badge">
+      <div class="live-dot"></div>
+      <span class="live-label">Live</span>
+    </div>
+    <div class="live-time" id="liveArbeitszeit" style="display:none"></div>
+    <div class="live-sub" id="live-sub" style="display:none"></div>
+    <div class="result-text" id="ergebnis"><span class="empty-state">Noch keine Berechnung</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Fortschritt</div>
+    <div class="progress-header">
+      <span class="card-label" style="margin:0" id="progress-label">8.3h Tagesziel</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-milestones" id="progress-milestones">
+      <span>0h</span><span>4h</span><span>8.3h</span>
+    </div>
+  </div>
+
+  <div class="card" id="diamond-card" style="display:none">
+    <div class="diamond-section">
+      <div class="diamond-title">&#128142; Belohnung</div>
+      <div id="img-wrap">
+        <img src="diamant-gold-10.png" class="diamant-gold" id="diamant-gold-10">
+        <img src="diamant-gold-9.png"  class="diamant-gold" id="diamant-gold-9">
+        <img src="diamant-gold-8.png"  class="diamant-gold" id="diamant-gold-8">
+        <img src="diamant-gold-7.png"  class="diamant-gold" id="diamant-gold-7">
+        <img src="diamant-gold-6.png"  class="diamant-gold" id="diamant-gold-6">
+        <img src="diamant-gold-5.png"  class="diamant-gold" id="diamant-gold-5">
+        <img src="diamant-gold-4.png"  class="diamant-gold" id="diamant-gold-4">
+        <img src="diamant-gold-3.png"  class="diamant-gold" id="diamant-gold-3">
+        <img src="diamant-gold-2.png"  class="diamant-gold" id="diamant-gold-2">
+        <img src="diamant-gold-1.png"  class="diamant-gold" id="diamant-gold-1">
+        <img src="diamant.png" id="color">
+        <img src="diamant.png" class="bw">
+      </div>
+      <div class="diamond-caption" id="diamond-caption">Diamant freigeschaltet!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let liveInterval = null;
+const isWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
+
+function getStandardStunden() {
+  const v = document.cookie.split('; ').reduce((acc, p) => {
+    const [k, val] = p.split('='); return k === 'standardstunden' ? parseFloat(decodeURIComponent(val)) : acc;
+  }, null);
+  return (v !== null && !isNaN(v)) ? v : 8.3;
+}
+
+const getDiamondStart = () => isWeekend() ? 0 : getStandardStunden() * 3600;
+const getGoldStart    = () => isWeekend() ? 3600 : getStandardStunden() * 3600 + 3600;
+const GOLD_STEP = 600;
+
+function stempelEntfernen() {
+  document.getElementById('timeInputs').value = "";
+  document.getElementById('ergebnis').innerHTML = '<span class="empty-state">Noch keine Berechnung</span>';
+  hideLive();
+  setProgress(0);
+  document.getElementById('diamond-card').style.display = 'none';
+}
+
+function pauseHinzufuegen() {
+  const ta = document.getElementById('timeInputs');
+  ta.value = ta.value.trim() ? ta.value.trim() + '\n1200\n1230' : '1200\n1230';
+}
+
+function parseZeiten() {
+  return document.getElementById('timeInputs').value.trim()
+    .split(/\s+/)
+    .map(z => z.replace(/:/g, '').trim())
+    .filter(z => /^\d{4}(\d{2})?$/.test(z))
+    .map(z => {
+      const h = parseInt(z.substring(0, 2), 10);
+      const m = parseInt(z.substring(2, 4), 10);
+      const s = z.length === 6 ? parseInt(z.substring(4, 6), 10) : 0;
+      return h * 3600 + m * 60 + s;
+    });
+}
+
+function berechneArbeitszeit() {
+  const sekundenArray = parseZeiten();
+  if (sekundenArray.length === 0) {
+    document.getElementById('ergebnis').innerText = "Bitte gültige Uhrzeiten eingeben.";
+    hideLive(); return;
+  }
+
+  let totalSekunden = 0;
+  for (let i = 0; i < sekundenArray.length - 1; i += 2)
+    totalSekunden += sekundenArray[i + 1] - sekundenArray[i];
+
+  const std = getStandardStunden();
+  if (isWeekend()) {
+    document.getElementById('progress-label').innerText = 'Wochenende – alles Überzeit';
+    document.getElementById('progress-milestones').innerHTML = `<span>0h</span><span>${(std/2).toFixed(1)}h</span><span>${std}h</span>`;
+  } else {
+    document.getElementById('progress-label').innerText = `${std}h Tagesziel`;
+    document.getElementById('progress-milestones').innerHTML = `<span>0h</span><span>${(std/2).toFixed(1)}h</span><span>${std}h</span>`;
+  }
+
+  if (sekundenArray.length % 2 === 0) {
+    hideLive();
+    document.getElementById('ergebnis').innerText = `Gearbeitet: ${(totalSekunden / 3600).toFixed(2)} Stunden`;
+    setProgress(totalSekunden);
+    updateDiamond(totalSekunden);
+    return;
+  }
+
+  startLiveUpdate(totalSekunden, sekundenArray.at(-1));
+}
+
+function startLiveUpdate(bisherSekunden, startSekunden) {
+  hideLive(false);
+  document.getElementById('live-badge').style.display = 'flex';
+  document.getElementById('liveArbeitszeit').style.display = 'block';
+  document.getElementById('live-sub').style.display = 'block';
+
+  liveInterval = setInterval(() => {
+    const now = new Date();
+    const jetztSek = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const aktuell = bisherSekunden + (jetztSek - startSekunden);
+    const h = Math.floor(aktuell / 3600);
+    const m = Math.floor((aktuell % 3600) / 60);
+    const s = Math.floor(aktuell % 60);
+    const pad = n => String(n).padStart(2, '0');
+
+    document.getElementById('liveArbeitszeit').innerText = `${(aktuell / 3600).toFixed(2)}h`;
+    document.getElementById('live-sub').innerText = `${pad(h)}:${pad(m)}:${pad(s)}`;
+
+    if (isWeekend()) {
+      document.getElementById('ergebnis').innerText = `Wochenende – ${(aktuell / 3600).toFixed(2)}h Überzeit`;
+    } else {
+      const verbleibend = getStandardStunden() * 3600 - aktuell;
+      if (verbleibend > 0) {
+        const feierabend = jetztSek + verbleibend;
+        document.getElementById('ergebnis').innerText =
+          `Noch ${(verbleibend / 3600).toFixed(2)}h bis zum Tagesziel\n` +
+          `Feierabend um ${pad(Math.floor(feierabend / 3600))}:${pad(Math.floor((feierabend % 3600) / 60))} Uhr`;
+      } else {
+        document.getElementById('ergebnis').innerText =
+          `Tagesziel erreicht! (+${((-verbleibend) / 3600).toFixed(2)}h)`;
+      }
+    }
+
+    setProgress(aktuell);
+    updateDiamond(aktuell);
+  }, 1000);
+}
+
+function setProgress(sekunden) {
+  const SOLL = isWeekend() ? getStandardStunden() * 3600 : getStandardStunden() * 3600;
+  const pct = Math.min(100, (sekunden / SOLL) * 100);
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct.toFixed(1) + '%';
+  fill.className = 'progress-fill' + (pct >= 100 ? ' done' : '');
+  document.getElementById('progress-pct').innerText = pct.toFixed(0) + '%';
+}
+
+function updateDiamond(aktuell) {
+  const DIAMOND_START = getDiamondStart();
+  const GOLD_START = getGoldStart();
+  if (aktuell > DIAMOND_START) {
+    document.getElementById('diamond-card').style.display = 'block';
+    const fillPct = Math.max(0, Math.min(100, (aktuell - DIAMOND_START) / 3600 * 100));
+    document.getElementById('color').style.clipPath = `inset(${(100 - fillPct).toFixed(1)}% 0px 0px 0px)`;
+    for (let i = 1; i <= 10; i++)
+      document.getElementById(`diamant-gold-${i}`).style.opacity =
+        Math.max(0, Math.min(1, (aktuell - GOLD_START - GOLD_STEP * (i - 1)) / GOLD_STEP));
+    const gp = Math.max(0, Math.min(10, (aktuell - GOLD_START) / GOLD_STEP));
+    document.getElementById('diamond-caption').innerText =
+      gp >= 10 ? '✨ Goldener Diamant!' :
+      gp > 0   ? `Vergoldet ${(gp * 10).toFixed(0)}%` :
+      isWeekend() ? '🎉 Wochenende!' : 'Diamant freigeschaltet!';
+  } else {
+    document.getElementById('diamond-card').style.display = 'none';
+  }
+}
+
+function hideLive(clear = true) {
+  if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
+  if (clear) {
+    document.getElementById('live-badge').style.display = 'none';
+    document.getElementById('liveArbeitszeit').style.display = 'none';
+    document.getElementById('live-sub').style.display = 'none';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const param = new URLSearchParams(window.location.search).get('timestamps');
+  if (!param) return;
+  document.getElementById('timeInputs').value =
+    param.split(';').map(e => e.trim()).filter(Boolean).join('\n');
+  berechneArbeitszeit();
+});
+</script>
+</body>
+</html>
