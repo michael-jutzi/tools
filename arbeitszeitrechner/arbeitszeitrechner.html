@@ -298,6 +298,7 @@ function stempelEntfernen() {
   hideLive();
   setProgress(0);
   document.getElementById('diamond-card').style.display = 'none';
+  localStorage.removeItem('zeitstempel');
 }
 
 function pauseHinzufuegen() {
@@ -324,6 +325,8 @@ function berechneArbeitszeit() {
     document.getElementById('ergebnis').innerText = "Bitte gültige Uhrzeiten eingeben.";
     hideLive(); return;
   }
+  // Zeitstempel im Cache speichern
+  localStorage.setItem('zeitstempel', document.getElementById('timeInputs').value.trim());
 
   let totalSekunden = 0;
   for (let i = 0; i < sekundenArray.length - 1; i += 2)
@@ -442,10 +445,16 @@ function hideLive(clear = true) {
 
 window.addEventListener('DOMContentLoaded', () => {
   const param = new URLSearchParams(window.location.search).get('timestamps');
-  if (!param) return;
-  document.getElementById('timeInputs').value =
-    param.split(';').map(e => e.trim()).filter(Boolean).join('\n');
-  berechneArbeitszeit();
+  if (param) {
+    // Vom Bookmarklet: neue Zeitstempel überschreiben den Cache
+    const wert = param.split(';').map(e => e.trim()).filter(Boolean).join('\n');
+    document.getElementById('timeInputs').value = wert;
+  } else {
+    // Kein URL-Parameter: gespeicherte Zeitstempel laden
+    const gespeichert = localStorage.getItem('zeitstempel');
+    if (gespeichert) document.getElementById('timeInputs').value = gespeichert;
+  }
+  if (document.getElementById('timeInputs').value.trim()) berechneArbeitszeit();
 });
 </script>
 </body>
