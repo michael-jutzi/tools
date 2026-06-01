@@ -273,15 +273,23 @@
 let liveInterval = null;
 const isWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
 
-function getStandardStunden() {
-  const v = document.cookie.split('; ').reduce((acc, p) => {
-    const [k, val] = p.split('='); return k === 'standardstunden' ? parseFloat(decodeURIComponent(val)) : acc;
-  }, null);
-  return (v !== null && !isNaN(v)) ? v : 8.3;
+// Read all settings once at load – avoids repeated cookie parsing and GitHub Pages timing issues
+function readCookie(name, fallback) {
+  const found = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='));
+  return found ? decodeURIComponent(found.slice(name.length + 1)) : fallback;
 }
 
-const getDiamondStart = () => isWeekend() ? 0 : getStandardStunden() * 3600;
-const getGoldStart    = () => isWeekend() ? 3600 : getStandardStunden() * 3600 + 3600;
+const SETTINGS = {
+  standardStunden:  parseFloat(readCookie('standardstunden', '8.3')) || 8.3,
+  ferienUeberzeit:  parseFloat(readCookie('ferien_ueberzeit_pro_tag', '0')) || 0,
+  ferienBarVisible: readCookie('ferien_bar_visible', '1') !== '0',
+  diamantVisible:   readCookie('diamant_visible', '1') !== '0',
+};
+
+function getStandardStunden() { return SETTINGS.standardStunden; }
+
+const getDiamondStart = () => isWeekend() ? 0 : SETTINGS.standardStunden * 3600;
+const getGoldStart    = () => isWeekend() ? 3600 : SETTINGS.standardStunden * 3600 + 3600;
 const GOLD_STEP = 600;
 
 function stempelEntfernen() {
@@ -379,15 +387,8 @@ function startLiveUpdate(bisherSekunden, startSekunden) {
   }, 1000);
 }
 
-function getFerienUeberzeit() {
-  const v = document.cookie.split('; ').reduce((acc, p) => {
-    const [k, val] = p.split('='); return k === 'ferien_ueberzeit_pro_tag' ? parseFloat(decodeURIComponent(val)) : acc;
-  }, null);
-  return (v !== null && !isNaN(v) && v > 0) ? v : 0;
-}
-
 function setProgress(sekunden) {
-  const SOLL = getStandardStunden() * 3600;
+  const SOLL = SETTINGS.standardStunden * 3600;
   const pct = Math.min(100, (sekunden / SOLL) * 100);
   const fill = document.getElementById('progress-fill');
   fill.style.width = pct.toFixed(1) + '%';
@@ -395,32 +396,25 @@ function setProgress(sekunden) {
   document.getElementById('progress-pct').innerText = pct.toFixed(0) + '%';
 
   // Ferien-Überzeit Bar
-  const ferienH = getFerienUeberzeit();
-  const ferienBarEnabled = document.cookie.split('; ').reduce((acc, p) => {
-    const [k, v] = p.split('='); return k === 'ferien_bar_visible' ? v : acc;
-  }, '1') !== '0';
   const ferienWrap = document.getElementById('ferien-bar-wrap');
-  if (ferienH > 0 && ferienBarEnabled) {
+  if (SETTINGS.ferienUeberzeit > 0 && SETTINGS.ferienBarVisible) {
     ferienWrap.style.display = 'block';
-    const ferienSek = ferienH * 3600;
+    const ferienSek = SETTINGS.ferienUeberzeit * 3600;
     const overtime = Math.max(0, sekunden - SOLL);
     const ferienPct = Math.min(100, (overtime / ferienSek) * 100);
     document.getElementById('ferien-bar-fill').style.width = ferienPct.toFixed(1) + '%';
     document.getElementById('ferien-bar-pct').innerText = ferienPct.toFixed(0) + '%';
-    document.getElementById('ferien-bar-start').innerText = getStandardStunden() + 'h';
-    document.getElementById('ferien-bar-end').innerText = '+' + ferienH.toFixed(2) + 'h';
+    document.getElementById('ferien-bar-start').innerText = SETTINGS.standardStunden + 'h';
+    document.getElementById('ferien-bar-end').innerText = '+' + SETTINGS.ferienUeberzeit.toFixed(2) + 'h';
   } else {
     ferienWrap.style.display = 'none';
   }
 }
 
 function updateDiamond(aktuell) {
-  const diamantEnabled = document.cookie.split('; ').reduce((acc, p) => {
-    const [k, v] = p.split('='); return k === 'diamant_visible' ? v : acc;
-  }, '1') !== '0';
   const DIAMOND_START = getDiamondStart();
   const GOLD_START = getGoldStart();
-  if (aktuell > DIAMOND_START && diamantEnabled) {
+  if (aktuell > DIAMOND_START && SETTINGS.diamantVisible) {
     document.getElementById('diamond-card').style.display = 'block';
     const fillPct = Math.max(0, Math.min(100, (aktuell - DIAMOND_START) / 3600 * 100));
     document.getElementById('color').style.clipPath = `inset(${(100 - fillPct).toFixed(1)}% 0px 0px 0px)`;
