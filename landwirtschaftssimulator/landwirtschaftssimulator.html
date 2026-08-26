@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landwirtschaftssimulator</title>
+  <script src="../theme.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --border: #e4e6eb;
+      --text: #1a1a2e;
+      --text-secondary: #444;
+      --muted: #999;
+      --shadow: 0 1px 4px rgba(0,0,0,0.06);
+      --progress-track: #f0f2f5;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e0e0e0;
+      --text-secondary: #aaa;
+      --muted: #555;
+      --shadow: none;
+      --progress-track: #0f1117;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .back-link { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .back-link:hover { color: var(--text); }
+    h1 { font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .status-line { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5; }
+    .status-line strong { color: var(--text); }
+    .status-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+    .status-sub a { color: #4f7fff; text-decoration: none; }
+    .status-sub a:hover { text-decoration: underline; }
+
+    .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .progress-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .progress-pct { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .progress-track { width: 100%; height: 8px; background: var(--progress-track); border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+    .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #4f7fff, #7c4dff); transition: width 0.9s linear; width: 0%; }
+    .progress-fill.done { background: linear-gradient(90deg, #38a169, #4f7fff); }
+
+    /* Scene */
+    .scene-card { padding: 16px; }
+    .scene-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      overflow: hidden;
+      background-image: url('images/hintergrund.PNG');
+      background-repeat: repeat;
+      background-size: 70px 70px;
+      perspective: 1400px;
+    }
+    .scene {
+      position: absolute;
+      inset: 6% 3% 3% 3%;
+      transform: rotateX(50deg);
+      transform-origin: center bottom;
+      transform-style: preserve-3d;
+      transition: filter 0.4s ease;
+    }
+    .scene.locked { filter: grayscale(65%) brightness(0.82); }
+
+    .field-plane {
+      position: absolute;
+      left: -3%;
+      top: 50%;
+      height: 90%;
+      aspect-ratio: 1 / 1;
+      transform: translateY(-50%) rotateZ(45deg) scale(0.78);
+      transform-origin: center center;
+      transform-style: preserve-3d;
+    }
+    .field {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      gap: 2px;
+      background: #8a6a46;
+      border-radius: 6px;
+      padding: 2px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      transform-style: preserve-3d;
+    }
+    .cell {
+      background-image: url('images/weizen.webp');
+      background-size: cover;
+      background-position: center;
+      border-radius: 1px;
+      transition: background-image 0.2s ease;
+      /* Counter-rotate so the tile artwork itself stays upright even
+         though the field grid it sits in is rotated diagonally. */
+      transform: rotateZ(-45deg) rotateX(-50deg);
+    }
+    .cell.mowed { background-image: url('images/erde.webp'); }
+
+    .barn { position: absolute; left: 74%; top: 8%; width: 24%; height: 78%; transform: rotateX(-50deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,0.3)); }
+    .barn img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+
+    .harvester, .tractor, .bale {
+      position: absolute;
+      z-index: 5;
+    }
+    /* Children of the rotated .field-plane: counter-rotate to stay upright,
+       and push forward on Z so they render in front of the field tiles
+       instead of losing the true-3D depth sort inside .field-plane.
+       No CSS transition – position is driven every animation frame. */
+    .harvester { width: 28%; aspect-ratio: 1.3/1; transform: translate(-50%, -50%) rotateZ(-45deg) rotateX(-50deg) translateZ(120px); filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }
+    .harvester img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+    .bale { width: 9%; aspect-ratio: 1/1; transform: translate(-50%, -50%) rotateZ(-45deg) rotateX(-50deg) translateZ(120px); z-index: 4; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); }
+    .bale img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Direct child of .scene: counter the scene's rotateX tilt and push
+       forward so it renders in front of the barn. */
+    .tractor { width: 18%; aspect-ratio: 1.3/1; z-index: 6; transition: left 5s linear, top 5s linear; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }
+    .tractor img { width: 100%; height: 100%; object-fit: contain; }
+
+    .lock-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 20px;
+      pointer-events: none;
+    }
+    .lock-badge {
+      background: rgba(26,26,46,0.78);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transform: rotateX(-50deg);
+    }
+
+    .barn-count {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <a class="back-link" href="../farming-apps/farming-apps.html">&#8592; Farming Apps</a>
+    <h1>Landwirtschaftssimulator</h1>
+  </header>
+
+  <div class="card">
+    <div class="status-line" id="status-line">Lade Zeitstempel &hellip;</div>
+    <div class="progress-header">
+      <span class="progress-label">Überstunde (&#8594; 1.00h)</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="status-sub">Zeitstempel werden im <a href="../arbeitszeitrechner/arbeitszeitrechner.html">Arbeitszeitrechner</a> erfasst.</div>
+  </div>
+
+  <div class="card scene-card">
+    <div class="scene-wrap">
+      <div class="scene" id="scene">
+        <div class="field-plane" id="field-plane">
+          <div class="field" id="field"></div>
+          <div class="harvester" id="harvester"><img src="images/mähdrescher.png" alt="Mähdrescher"></div>
+        </div>
+        <div class="barn"><img id="barn-img" src="images/schäune-0.webp" alt="Scheune"></div>
+        <div class="tractor" id="tractor"><img src="images/traktor.avif" alt="Traktor"></div>
+      </div>
+      <div class="lock-overlay" id="lock-overlay" style="display:none">
+        <div class="lock-badge" id="lock-badge">&#128274;</div>
+      </div>
+    </div>
+    <div class="barn-count" id="barn-count">&#127806; 0 Häuballen in der Scheune</div>
+  </div>
+</div>
+
+<script>
+  const ROWS = 10, COLS = 12, TOTAL = ROWS * COLS; // 120 cells
+  const BARN_POS = { x: 86, y: 44 };
+  const PARK_POS = BARN_POS; // tractor idles right where it drops off
+  const LEG_MS = 5000; // ~5s out to the bale, ~5s back
+  const CELL_SECONDS = 30; // one wheat cell turns to earth every 30 real seconds
+  // 120 cells * 30s = 3600s = the same 1h overtime target used above.
+
+  function readCookie(name, fallback) {
+    const found = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='));
+    return found ? decodeURIComponent(found.slice(name.length + 1)) : fallback;
+  }
+  const SETTINGS = { standardStunden: parseFloat(readCookie('standardstunden', '8.3')) || 8.3 };
+
+  function parseZeiten(text) {
+    return text.trim().split(/\s+/)
+      .map(z => z.replace(/:/g, '').trim())
+      .filter(z => /^\d{4}(\d{2})?$/.test(z))
+      .map(z => {
+        const h = parseInt(z.substring(0, 2), 10);
+        const m = parseInt(z.substring(2, 4), 10);
+        const s = z.length === 6 ? parseInt(z.substring(4, 6), 10) : 0;
+        return h * 3600 + m * 60 + s;
+      });
+  }
+
+  function getWorkedSecondsNow() {
+    const raw = localStorage.getItem('zeitstempel') || '';
+    const arr = parseZeiten(raw);
+    let total = 0;
+    for (let i = 0; i < arr.length - 1; i += 2) total += arr[i + 1] - arr[i];
+    if (arr.length % 2 === 1) {
+      const startSek = arr[arr.length - 1];
+      const now = new Date();
+      const nowSek = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      total += Math.max(0, nowSek - startSek);
+    }
+    return total;
+  }
+
+  // --- Field setup ---
+  const fieldEl = document.getElementById('field');
+  fieldEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+  fieldEl.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+  const cellEls = [];
+  const order = [];
+  for (let r = 0; r < ROWS; r++) {
+    cellEls[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      fieldEl.appendChild(cell);
+      cellEls[r][c] = cell;
+    }
+    const range = [...Array(COLS).keys()];
+    if (r % 2 !== 0) range.reverse();
+    for (const c of range) order.push([r, c]);
+  }
+
+  // Position local to .field-plane (0-100%); the plane's own rotateZ/scale
+  // transform carries these children along automatically.
+  function cellLocalPos(row, col) {
+    return {
+      x: ((col + 0.5) / COLS) * 100,
+      y: ((row + 0.5) / ROWS) * 100
+    };
+  }
+
+  // Converts a rendered element's on-screen position into a percentage
+  // relative to the (unrotated) .scene box, for the tractor to travel to.
+  function sceneRelativePos(el) {
+    const r = el.getBoundingClientRect();
+    const sceneRect = sceneEl.getBoundingClientRect();
+    return {
+      x: (r.left + r.width / 2 - sceneRect.left) / sceneRect.width * 100,
+      y: (r.top + r.height / 2 - sceneRect.top) / sceneRect.height * 100
+    };
+  }
+
+  const sceneEl = document.getElementById('scene');
+  const fieldPlaneEl = document.getElementById('field-plane');
+  const lockOverlay = document.getElementById('lock-overlay');
+  const lockBadge = document.getElementById('lock-badge');
+  const harvesterEl = document.getElementById('harvester');
+  const tractorEl = document.getElementById('tractor');
+  const barnCountEl = document.getElementById('barn-count');
+  const barnImgEl = document.getElementById('barn-img');
+  const tractorImgEl = tractorEl.querySelector('img');
+
+  // The barn artwork gets fuller the more overtime minutes have passed.
+  const BARN_STAGES = [0, 1, 5, 10, 20, 30, 40, 50, 60];
+  let barnStage = -1;
+  function updateBarnImage(overtimeMinutes) {
+    let stage = 0;
+    for (const s of BARN_STAGES) if (overtimeMinutes >= s) stage = s;
+    if (stage !== barnStage) {
+      barnStage = stage;
+      barnImgEl.src = `images/schäune-${stage}.webp`;
+    }
+  }
+
+  // The tractor artwork faces left by default; mirror it when driving right.
+  let tractorFacingLeft = true;
+
+  moveTractor(PARK_POS.x, PARK_POS.y, true);
+
+  function moveTractor(x, y, instant) {
+    const currentX = parseFloat(tractorEl.style.left);
+    if (!isNaN(currentX)) {
+      if (x > currentX + 0.01) tractorFacingLeft = false;
+      else if (x < currentX - 0.01) tractorFacingLeft = true;
+    }
+    tractorEl.style.transform = `translate(-50%, -50%) rotateX(-50deg) translateZ(120px) scaleX(${tractorFacingLeft ? 1 : -1})`;
+    if (instant) tractorEl.style.transition = 'none';
+    tractorEl.style.left = x + '%';
+    tractorEl.style.top = y + '%';
+    if (instant) requestAnimationFrame(() => { tractorEl.style.transition = ''; });
+  }
+
+  function setTractorCarrying(carrying) {
+    tractorImgEl.src = carrying ? 'images/traktor-mit-haeuballe.avif' : 'images/traktor.avif';
+  }
+
+  // --- Tractor delivery queue ---
+  // One hay bale is made per finished field; the tractor drives out to
+  // fetch it, then carries it to the barn (shown by swapping its own
+  // sprite for the "tractor + trailer with bale" image).
+  let tractorBusy = false;
+  const baleQueue = [];
+  let baleCount = 0;
+
+  function spawnCellBale(hr, hc) {
+    const local = cellLocalPos(hr, hc);
+    const el = document.createElement('div');
+    el.className = 'bale';
+    el.style.left = local.x + '%';
+    el.style.top = local.y + '%';
+    el.innerHTML = '<img src="images/heuballe.webp" alt="Häuballen">';
+    fieldPlaneEl.appendChild(el);
+    // Measure where this bale actually landed on screen (post-rotation)
+    // so the tractor – which lives outside the rotated plane – can drive
+    // straight to it in the flat .scene coordinate space.
+    const pickupPos = sceneRelativePos(el);
+    baleQueue.push({ pickupPos, el });
+    processQueue();
+  }
+
+  function processQueue() {
+    if (tractorBusy || baleQueue.length === 0) return;
+    tractorBusy = true;
+    const { pickupPos, el } = baleQueue.shift();
+    moveTractor(pickupPos.x, pickupPos.y);
+    setTimeout(() => {
+      el.remove(); // picked up onto the tractor's trailer
+      setTractorCarrying(true);
+      moveTractor(BARN_POS.x, BARN_POS.y);
+      setTimeout(() => {
+        setTractorCarrying(false);
+        baleCount++;
+        barnCountEl.innerHTML = `&#127806; ${baleCount} Häuballen in der Scheune`;
+        moveTractor(PARK_POS.x, PARK_POS.y);
+        tractorBusy = false;
+        processQueue();
+      }, LEG_MS);
+    }, LEG_MS);
+  }
+
+  // --- Field animation ---
+  // Tied directly to real overtime seconds: one wheat cell turns to earth
+  // every CELL_SECONDS, so the harvester creeps forward very slowly and
+  // the whole 120-cell field finishes exactly when 1h overtime is reached.
+  // Every single cell that finishes sends one bale out to the tractor.
+  let lastCutIndex = 0;
+  let rafId = null;
+  let phase = null; // 'locked' | 'running' | 'finished'
+
+  function setMowedUpTo(cutIndex) {
+    order.forEach(([r, c], i) => {
+      cellEls[r][c].classList.toggle('mowed', i < cutIndex);
+    });
+  }
+
+  function renderContinuous(pathPos) {
+    const cutIndex = Math.min(TOTAL, Math.floor(pathPos));
+    setMowedUpTo(cutIndex);
+
+    const row = Math.min(ROWS - 1, Math.floor(pathPos / COLS));
+    const withinRow = Math.min(COLS, pathPos - row * COLS);
+    const forward = row % 2 === 0;
+    const colFrac = forward ? withinRow : COLS - withinRow;
+    harvesterEl.style.left = (colFrac / COLS) * 100 + '%';
+    harvesterEl.style.top = ((row + 0.5) / ROWS) * 100 + '%';
+
+    if (cutIndex > lastCutIndex) {
+      for (let i = lastCutIndex; i < cutIndex; i++) {
+        const [r, c] = order[i];
+        spawnCellBale(r, c);
+      }
+      lastCutIndex = cutIndex;
+    }
+  }
+
+  function animFrame() {
+    if (phase !== 'running') { rafId = null; return; }
+    const workedSek = getWorkedSecondsNow();
+    const overtimeSek = Math.max(0, workedSek - SETTINGS.standardStunden * 3600);
+    renderContinuous(Math.min(TOTAL, overtimeSek / CELL_SECONDS));
+    rafId = requestAnimationFrame(animFrame);
+  }
+
+  function stopLoop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  function resetFieldVisual() {
+    setMowedUpTo(0);
+    const [hr, hc] = order[0];
+    const local = cellLocalPos(hr, hc);
+    harvesterEl.style.left = local.x + '%';
+    harvesterEl.style.top = local.y + '%';
+    lastCutIndex = 0;
+  }
+
+  function forceFieldDone() {
+    renderContinuous(TOTAL); // renders the last cell + spawns its bale first
+  }
+
+  // --- Status + tick loop ---
+  const statusLine = document.getElementById('status-line');
+  const progressFill = document.getElementById('progress-fill');
+  const progressPct = document.getElementById('progress-pct');
+
+  function tick() {
+    const workedSek = getWorkedSecondsNow();
+    const workedH = workedSek / 3600;
+    const std = SETTINGS.standardStunden;
+    const overtimeH = workedH - std;
+    const targetPct = Math.max(0, Math.min(100, overtimeH / 1 * 100));
+    const locked = workedH < std;
+    const done = targetPct >= 100;
+
+    updateBarnImage(Math.max(0, overtimeH) * 60);
+
+    sceneEl.classList.toggle('locked', locked);
+    lockOverlay.style.display = locked ? 'flex' : 'none';
+    if (locked) {
+      lockBadge.innerHTML = `&#128274; Noch ${(std - workedH).toFixed(2)}h bis Feierabend`;
+    }
+
+    if (locked) {
+      statusLine.innerHTML = `Gearbeitet: <strong>${workedH.toFixed(2)}h</strong> von ${std.toFixed(1)}h Tagesziel`;
+    } else if (done) {
+      statusLine.innerHTML = `&#127881; Feld komplett abgeerntet – alle Häuballen sind in der Scheune!`;
+    } else {
+      statusLine.innerHTML = `Gearbeitet: <strong>${workedH.toFixed(2)}h</strong> &middot; Überstunde: <strong>${Math.max(0, overtimeH).toFixed(2)}h</strong> / 1.00h`;
+    }
+
+    progressFill.style.width = targetPct.toFixed(1) + '%';
+    progressFill.classList.toggle('done', done);
+    progressPct.innerText = targetPct.toFixed(0) + '%';
+
+    const newPhase = locked ? 'locked' : (done ? 'finished' : 'running');
+    if (newPhase !== phase) {
+      phase = newPhase;
+      if (phase === 'locked') {
+        stopLoop();
+        resetFieldVisual();
+      } else if (phase === 'finished') {
+        stopLoop();
+        forceFieldDone();
+      } else if (!rafId) {
+        rafId = requestAnimationFrame(animFrame);
+      }
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
